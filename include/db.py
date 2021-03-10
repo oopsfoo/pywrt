@@ -22,8 +22,7 @@ class RuleTable:
     
     def addDeps(self, target, depTarget):
         rule = self.getByTarget(target)
-        depRule = self.getByTarget(depTarget)
-        rule['deps'].append(depRule)
+        rule['deps'].append(depTarget)
     
     def getByTarget(self, target):
         if target not in self.table:
@@ -36,9 +35,9 @@ class RuleTable:
             rule = self.table[target]
             targetStr += rule['target']
             targetStr += ':'
-            for dep in rule['deps']:
+            for depTarget in rule['deps']:
                 targetStr += ' '
-                targetStr += dep['target']
+                targetStr += depTarget
         print(targetStr)
 
     def dump(self):
