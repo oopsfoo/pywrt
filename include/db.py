@@ -39,6 +39,7 @@ class RuleTable:
                 targetStr += ' '
                 targetStr += depTarget
         print(targetStr)
+        print("\n")
 
     def dump(self):
         for target in self.table.keys():
