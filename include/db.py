@@ -15,6 +15,14 @@ class VarTable:
     def put(self, key, value):
         self.table[key] = value 
 
+    def dump(self):
+        for var in self.table.keys():
+            print('%s := %s' % (var, self.getValue(var)))
+
+    def reset(self):
+        self.table = {}
+
+
 class RuleTable:
 
     def __init__(self):
@@ -39,11 +47,14 @@ class RuleTable:
                 targetStr += ' '
                 targetStr += depTarget
         print(targetStr)
-        print("\n")
+        print('')
 
     def dump(self):
         for target in self.table.keys():
             self.printRule(target)
+
+    def reset(self):
+        self.table = {}
 
 varTable = VarTable()
 ruleTable = RuleTable()
