@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import db
+import os
 
 
 def subtarget_default(subdir: str, target: str):
@@ -41,30 +42,33 @@ def subdir(workdir):
         subtarget(workdir, target)
 
 
-def stampfile(subdir, name, target, depends, config_options, stampfile_location):
+def stampfile(subdir, name, target, depends, config_options='', stampfile_location=''):
     staging_dir = db.get_val('STAGING_DIR')
     tmp_dir = db.get_val('TMP_DIR')
 
     #   $(1)/stamp-$(3):=$(if $(6),$(6),$(STAGING_DIR))/stamp/.$(2)_$(3)$(5)
-    stamp_var = '%s/stamp-%s' % (subdir, target)
-    stamp_val = ''
+    stampfile_var = '%s/stamp-%s' % (subdir, target)
+    stampfile_full = ''
     if stampfile_location is '':
-        stamp_val += staging_dir
+        stampfile_full += staging_dir
     else:
-        stamp_val += stampfile_location
-    stamp_val += '/stamp/.%s_%s%s' % (name, target, config_options)
-    db.set_var(stamp_var, stamp_val)
+        stampfile_full += stampfile_location
+    stampfile_full += '/stamp/.%s_%s%s' % (name, target, config_options)
+    db.set_var(stampfile_var, stampfile_full)
 
     #   $$($(1)/stamp-$(3)): $(TMP_DIR)/.build $(4)
     #       @+$(SCRIPT_DIR)/timestamp.pl -n $$($(1)/stamp-$(3)) $(1) $(4) || \
     #       $(MAKE) $(if $(QUIET),--no-print-directory) $$($(1)/flags-$(3)) $(1)/$(3)
     #       @mkdir -p $$$$(dirname $$($(1)/stamp-$(3)))
     #       @touch $$($(1)/stamp-$(3))
-    db.add_prerequisites(stamp_val, '%s/.build %s' % (tmp_dir, depends))
-    # TODO db.addCmds(clean_target, 'script/timestamp.pl' )
-    # TODO db.addCmds(clean_target, 'make' )
-    # TODO db.addCmds(clean_target, 'mkdir' )
-    # TODO db.addCmds(clean_target, 'touch' )
+    db.add_prerequisites(stampfile_full, '%s/.build %s' % (tmp_dir, depends))
+    db.add_recipes(stampfile_full, 'script/timestamp.pl -n %s %s %s || \\' % (stampfile_full, subdir, depends))
+    make_flags_var = '%s/flags-%s' % (subdir, target)
+    make_flags = db.get_val(make_flags_var)
+    db.add_recipes(stampfile_full, 'make %s %s/%s # ${%s}' % (make_flags, subdir, target, make_flags_var))
+    mkdir = os.path.dirname(stampfile_full)
+    db.add_recipes(stampfile_full, 'mkdir %s' % mkdir)
+    db.add_recipes(stampfile_full, 'touch %s' % stampfile_full)
 
     # TODO   $$(if $(call debug,$(1),v),,.SILENT: $$($(1)/stamp-$(3)))
     # TODO   .PRECIOUS: $$($(1)/stamp-$(3)) # work around a make bug
@@ -76,9 +80,9 @@ def stampfile(subdir, name, target, depends, config_options, stampfile_location)
 
     #   $(1)/stamp-$(3)/clean: FORCE
     #       @rm -f $$($(1)/stamp-$(3))
-    clean_target = '%s/clean' % stamp_var
+    clean_target = '%s/clean' % stampfile_var
     db.add_prerequisites(clean_target, 'FORCE')
-    # TODO db.addCmds(clean_target, '@rm -f %s' %)
+    db.add_recipes(clean_target, '@rm -f %s' % stampfile_full)
 
 
 def vars_join(a, b):
@@ -107,7 +111,8 @@ def test_stampfile():
     db.reset()
     db.set_var('STAGING_DIR', '$ROOT/staging_dir/target-x86_64_musl')
     db.set_var('TMP_DIR', '$ROOT/tmp')
-    stampfile('target', 'target', 'compile', 'tmp/.build', '', '')
+    db.set_var('target/flags-compile', '$ROOT/tmp')
+    stampfile('target', 'target', 'compile', '$ROOT/tmp/.build', '', '')
     db.dump()
 
 

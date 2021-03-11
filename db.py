@@ -4,15 +4,15 @@ var_table = {}
 rule_table = {}
 
 
-def has_var(var: str):
+def has_var(var: str) -> bool:
     return var in var_table
 
 
-def get_val(var: str):
-    return var_table.get(var, None)
+def get_val(var: str) -> str:
+    return var_table.get(var, '')
 
 
-def set_var(var, val):
+def set_var(var: str, val: object) -> None:
     var_table[var] = val
 
 
